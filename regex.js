@@ -5,23 +5,29 @@
 
 const PATTERNS = {
   pesel: {
+    // Matches 11 digits, allows basic boundary checks
     pattern: /\b\d{11}\b/g,
     validate: validatePesel,
   },
   email: {
+    // Standard email pattern
     pattern: /\b[\w.-]+@[\w.-]+\.\w{2,}\b/gi,
   },
   phone: {
-    pattern: /(?:\+48[\s-]?)?\d{3}[\s-]?\d{3}[\s-]?\d{3}\b/g,
+    // Polish mobile/landline formats: 574 777 072, +48 123-456-789, (12) 345 67 89
+    pattern: /(?:\+48[\s-]?)?(?:\(?\d{2,3}\)?[\s-]?)?\d{3}[\s-]?\d{3}[\s-]?\d{2,3}\b/g,
   },
   'bank-account': {
+    // PL IBAN (26 digits) or standard format
     pattern: /\b(?:PL)?\d{2}[\s]?(?:\d{4}[\s]?){6}\b/g,
   },
   'credit-card-number': {
+    // 16 digits, grouped
     pattern: /\b(?:\d{4}[\s-]?){3}\d{4}\b/g,
   },
   'document-number': {
-    pattern: /\b[A-Z]{3}\s?\d{6}\b/g,
+    // Updated: Matches Polish ID (3 letters 6 digits) AND Passport (2 letters 7 digits)
+    pattern: /\b([A-Z]{3}\s?\d{6}|[A-Z]{2}\s?\d{7})\b/g,
   },
 };
 
@@ -29,7 +35,7 @@ const PATTERNS = {
  * Validate PESEL checksum
  */
 function validatePesel(pesel) {
-  if (pesel.length !== 11 || !/^\d+$/.test(pesel)) return false;
+  if (pesel.length !== 11 || !/^\\d+$/.test(pesel)) return false;
   
   const weights = [1, 3, 7, 9, 1, 3, 7, 9, 1, 3];
   let sum = 0;
@@ -71,20 +77,5 @@ export function findStructuredPII(text) {
     }
   }
   
-  // Sort by position
-  matches.sort((a, b) => a.start - b.start);
-  
-  return matches;
+  return matches.sort((a, b) => a.start - b.start);
 }
-
-/**
- * Check if position has postal code nearby (indicates address)
- */
-export function hasPostalCodeNearby(text, position, window = 100) {
-  const start = Math.max(0, position - window);
-  const end = Math.min(text.length, position + window);
-  const context = text.slice(start, end);
-  return /\d{2}-\d{3}/.test(context);
-}
-
-export { PATTERNS, validatePesel };

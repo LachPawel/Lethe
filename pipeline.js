@@ -124,30 +124,27 @@ export async function synthesize(text, entities) {
     uniqueEntities.get(key).positions.push({ start: ent.start, end: ent.end });
   }
 
-  const prompt = `Wygeneruj syntetyczne (fikcyjne) zamienniki dla poniższych danych osobowych.
-WAŻNE: Zachowaj poprawną odmianę morfologiczną (przypadek gramatyczny)!
+  const uniqueTexts = [...uniqueEntities.values()].map(e => e.original);
+  
+  const prompt = `Zamień dane osobowe na fikcyjne. Zachowaj odmianę gramatyczną.
 
-ENCJE DO ZAMIANY:
-${[...uniqueEntities.values()].map(e => `- "${e.original}" (${e.label})`).join('\n')}
+Tekst: "${text}"
 
-KONTEKST ZDANIA:
-${text}
+Dane do zamiany: ${uniqueTexts.join(', ')}
 
-Dla każdej encji podaj zamiennik w formacie JSON:
-{"replacements": {"oryginał": "zamiennik", ...}}
-
-Przykład:
-- "Jana" (imię w dopełniaczu) → "Piotra" (nie "Piotr")
-- "Kowalskiemu" (nazwisko w celowniku) → "Nowakowi"
-
-JSON:`;
+Zwróć TYLKO JSON z zamiennikami: {"replacements": {"oryginał": "zamiennik"}}`;
 
   const response = await chat(prompt, { temperature: 0.7 });
   
   try {
     let jsonStr = response.trim();
     if (jsonStr.startsWith('```')) {
-      jsonStr = jsonStr.replace(/```json?\n?/g, '').replace(/```/g, '');
+      jsonStr = jsonStr.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+    }
+    // Try to extract JSON from response
+    const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[0];
     }
     
     const data = JSON.parse(jsonStr);
@@ -180,7 +177,17 @@ JSON:`;
     
   } catch (e) {
     console.error('Synthetic generation failed:', e.message);
-    return { synthetic: null, error: e.message };
+    // Fallback: try direct text generation
+    try {
+      const fallbackPrompt = `Zamień "${uniqueTexts.join(', ')}" na fikcyjne dane w tekście. Zwróć TYLKO zmodyfikowany tekst:\n\n${text}`;
+      const fallbackResponse = await chat(fallbackPrompt, { temperature: 0.7 });
+      return {
+        synthetic: fallbackResponse.trim(),
+        replacements: {},
+      };
+    } catch (e2) {
+      return { synthetic: null, error: e.message };
+    }
   }
 }
 
