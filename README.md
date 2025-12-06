@@ -155,4 +155,4 @@ MIT
 - Paweł Lach
 - Bartosz Idzik
 
-Hackathon Hacknation - Dane bez Twarzy
+Projekt stworzony na Hsackathon HackNation 2025 - Dane bez Twarzy
