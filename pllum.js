@@ -30,31 +30,25 @@ export async function chat(prompt, options = {}) {
  * Extract entities using PLLuM NER
  */
 export async function extractEntities(text) {
-  const prompt = `Jesteś ekspertem od rozpoznawania danych osobowych w tekstach polskich.
+  const prompt = `Twoim zadaniem jest znalezienie danych osobowych (PII) w podanym tekście.
+Wypisz znalezione encje w formacie JSON. Nie dodawaj żadnych komentarzy.
 
-Przeanalizuj tekst i znajdź WSZYSTKIE dane osobowe. Dla każdej encji podaj:
-- text: dokładny tekst z dokumentu
-- label: kategoria
-- start: pozycja początkowa
-- end: pozycja końcowa
-
-KATEGORIE:
+Kategorie:
 name, surname, age, date-of-birth, date, sex, religion, political-view, ethnicity, sexual-orientation, health, relative, city, address, email, phone, pesel, document-number, company, school-name, job-title, bank-account, credit-card-number, username, secret
 
-WAŻNE:
-- {city} = miasto w kontekście opisu/podróży
-- {address} = pełny adres zamieszkania (ulica+numer+kod+miasto)
-- {relative} = relacja rodzinna ujawniająca tożsamość ("mój brat Jan")
+Przykład:
+Tekst: "Nazywam się Jan Kowalski."
+Odpowiedź: {"entities": [{"text": "Jan", "label": "name", "start": 12, "end": 15}, {"text": "Kowalski", "label": "surname", "start": 16, "end": 24}]}
 
-Odpowiedz TYLKO JSON:
-{"entities": [{"text": "...", "label": "...", "start": 0, "end": 0}]}
-
-TEKST:
+Tekst do analizy:
+"""
 ${text}
+"""
 
-JSON:`;
+Odpowiedź JSON:`;
 
   const response = await chat(prompt, { temperature: 0.1, maxTokens: 2000 });
+  console.log('DEBUG: Raw LLM response:', response);
   
   try {
     let jsonStr = response.trim();

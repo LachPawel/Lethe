@@ -5,7 +5,6 @@ Easy integration with Python data pipelines
 """
 
 import requests
-import json
 from typing import Optional, List, Dict
 from dataclasses import dataclass
 
@@ -21,7 +20,7 @@ class AnonymizationResult:
 class LetheClient:
     """Client for Lethe anonymization API"""
     
-    def __init__(self, base_url: str = "http://localhost:3001"):
+    def __init__(self, base_url: str = "http://localhost:3003"):
         self.base_url = base_url.rstrip('/')
     
     def anonymize(self, text: str, generate_synthetic: bool = False) -> AnonymizationResult:

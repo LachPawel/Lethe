@@ -4,10 +4,10 @@
   "description": "Polish PII Anonymization Tool - Dane bez Twarzy",
   "type": "module",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "node --watch src/server.js",
-    "cli": "node src/cli.js",
-    "test": "node --test tests/"
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "cli": "node cli.js",
+    "test": "node --test test.js"
   },
   "dependencies": {
     "openai": "^4.20.0",

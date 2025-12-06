@@ -11,7 +11,7 @@ function printHelp() {
 🏛️  Lethe - Polish PII Anonymization Tool
 
 USAGE:
-  node src/cli.js [options] <input>
+  node cli.js [options] <input>
 
 OPTIONS:
   -i, --input <file>     Input file (TXT)
@@ -21,9 +21,9 @@ OPTIONS:
   -h, --help             Show this help
 
 EXAMPLES:
-  node src/cli.js -t "Jan Kowalski, PESEL 90010112345"
-  node src/cli.js -i input.txt -o output.json
-  node src/cli.js -i input.txt -s
+  node cli.js -t "Jan Kowalski, PESEL 90010112345"
+  node cli.js -i input.txt -o output.json
+  node cli.js -i input.txt -s
 `);
 }
 

@@ -2,7 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
-import { process, anonymize, synthesize } from './pipeline.js';
+import { process as processText, anonymize, synthesize } from './pipeline.js';
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -24,7 +24,7 @@ app.post('/api/anonymize', async (req, res) => {
       return res.status(400).json({ error: 'Brak tekstu' });
     }
 
-    const result = await process(text, { generateSynthetic });
+    const result = await processText(text, { generateSynthetic });
     res.json(result);
     
   } catch (error) {

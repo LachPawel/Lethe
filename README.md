@@ -34,7 +34,7 @@ cp .env.example .env
 PLLUM_API_KEY=your_api_key
 PLLUM_BASE_URL=https://apim-pllum-tst-pcn.azure-api.net/vllm/v1
 PLLUM_MODEL=CYFRAGOVPL/pllum-12b-nc-chat-250715
-PORT=3001
+PORT=3003
 ```
 
 ## Użycie
@@ -43,10 +43,10 @@ PORT=3001
 
 ```bash
 # Bezpośredni tekst
-node src/cli.js -t "Jan Kowalski, PESEL 90010112345, mieszka w Warszawie"
+node cli.js -t "Jan Kowalski, PESEL 90010112345, mieszka w Warszawie"
 
 # Plik
-node src/cli.js -i input.txt -o output.json
+node cli.js -i input.txt -o output.json
 
 # Z generacją syntetyczną
 node src/cli.js -i input.txt -s
