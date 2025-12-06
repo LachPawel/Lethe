@@ -21,7 +21,7 @@ Narzędzie do automatycznej anonimizacji danych osobowych w tekstach polskich. W
 ## Instalacja
 
 ```bash
-git clone https://github.com/your-repo/lethe.git
+git clone https://github.com/lachpawel/lethe.git
 cd lethe
 npm install
 cp .env.example .env
@@ -152,4 +152,7 @@ MIT
 
 ## Autorzy
 
-Hackathon NASK 2024 - Dane bez Twarzy
+- Paweł Lach
+- Bartosz Idzik
+
+Hackathon Hacknation - Dane bez Twarzy
