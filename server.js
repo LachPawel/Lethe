@@ -2,6 +2,9 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const pdf = require('pdf-parse');
 import { process as processText, anonymize, synthesize } from './pipeline.js';
 
 const app = express();
@@ -34,17 +37,27 @@ app.post('/api/anonymize', async (req, res) => {
   }
 });
 
-// Anonymize file (TXT)
+// Anonymize file (TXT, PDF)
 app.post('/api/anonymize/file', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Brak pliku' });
     }
 
-    const text = req.file.buffer.toString('utf-8');
+    let text = '';
+    const mimeType = req.file.mimetype;
+
+    if (mimeType === 'application/pdf') {
+      const data = await pdf(req.file.buffer);
+      text = data.text;
+    } else {
+      // Default to text/plain
+      text = req.file.buffer.toString('utf-8');
+    }
+
     const generateSynthetic = req.body.generateSynthetic === 'true';
     
-    const result = await process(text, { generateSynthetic });
+    const result = await processText(text, { generateSynthetic });
     
     res.json({
       ...result,
@@ -67,7 +80,7 @@ app.post('/api/anonymize/batch', async (req, res) => {
     }
 
     const results = await Promise.all(
-      texts.map(text => process(text, { generateSynthetic }))
+      texts.map(text => processText(text, { generateSynthetic }))
     );
     
     res.json({ results });

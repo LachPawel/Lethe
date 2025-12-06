@@ -1,94 +1,147 @@
-const input = document.getElementById('input');
-const output = document.getElementById('output');
-const submitBtn = document.getElementById('submitBtn');
-const clearBtn = document.getElementById('clearBtn');
-const copyBtn = document.getElementById('copyBtn');
-const syntheticCheckbox = document.getElementById('synthetic');
-const loader = document.getElementById('loader');
-const stats = document.getElementById('stats');
-const entityCount = document.getElementById('entityCount');
+let currentMode = 'text'; // 'text' or 'file'
+let selectedFile = null;
 
-// Auto-resize textarea logic could go here, but we used fixed height for simplicity
+function switchTab(mode) {
+    currentMode = mode;
+    const tabText = document.getElementById('tab-text');
+    const tabFile = document.getElementById('tab-file');
+    const inputTextContainer = document.getElementById('input-text-container');
+    const inputFileContainer = document.getElementById('input-file-container');
 
-submitBtn.addEventListener('click', async () => {
-    const text = input.value.trim();
-    if (!text) return;
+    if (mode === 'text') {
+        tabText.className = "w-32 py-2.5 text-sm font-medium leading-5 text-blue-700 bg-white shadow rounded-lg focus:outline-none focus:ring-2 ring-offset-2 ring-offset-blue-400 ring-white ring-opacity-60 transition-all duration-200";
+        tabFile.className = "w-32 py-2.5 text-sm font-medium leading-5 text-gray-400 hover:text-white rounded-lg focus:outline-none focus:ring-2 ring-offset-2 ring-offset-blue-400 ring-white ring-opacity-60 transition-all duration-200";
+        inputTextContainer.classList.remove('hidden');
+        inputFileContainer.classList.add('hidden');
+    } else {
+        tabFile.className = "w-32 py-2.5 text-sm font-medium leading-5 text-blue-700 bg-white shadow rounded-lg focus:outline-none focus:ring-2 ring-offset-2 ring-offset-blue-400 ring-white ring-opacity-60 transition-all duration-200";
+        tabText.className = "w-32 py-2.5 text-sm font-medium leading-5 text-gray-400 hover:text-white rounded-lg focus:outline-none focus:ring-2 ring-offset-2 ring-offset-blue-400 ring-white ring-opacity-60 transition-all duration-200";
+        inputTextContainer.classList.add('hidden');
+        inputFileContainer.classList.remove('hidden');
+    }
+}
 
-    // UI State: Loading
-    setLoading(true);
-    output.textContent = '';
-    stats.classList.add('hidden');
-    copyBtn.classList.add('hidden');
+function clearInput() {
+    document.getElementById('input-text').value = '';
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    
+    if (files.length > 0) {
+        handleFile(files[0]);
+    }
+    
+    e.currentTarget.classList.remove('border-blue-500', 'bg-gray-800/50');
+}
+
+function handleFileSelect(e) {
+    if (e.target.files.length > 0) {
+        handleFile(e.target.files[0]);
+    }
+}
+
+function handleFile(file) {
+    selectedFile = file;
+    document.getElementById('upload-placeholder').classList.add('hidden');
+    document.getElementById('file-info').classList.remove('hidden');
+    document.getElementById('filename-display').textContent = file.name;
+}
+
+async function processData() {
+    const synthetic = document.getElementById('synthetic-toggle').checked;
+    const outputText = document.getElementById('output-text');
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const statusText = document.getElementById('status-text');
+    const processTime = document.getElementById('process-time');
+    const processBtn = document.getElementById('process-btn');
+
+    // Reset UI
+    outputText.value = '';
+    loadingOverlay.classList.remove('hidden');
+    statusText.textContent = 'Przetwarzanie...';
+    statusText.className = 'text-blue-400 animate-pulse';
+    processBtn.disabled = true;
+    
+    const startTime = Date.now();
 
     try {
-        const response = await fetch('/api/anonymize', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                text: text,
-                generateSynthetic: syntheticCheckbox.checked
-            })
-        });
+        let response;
+        
+        if (currentMode === 'text') {
+            const text = document.getElementById('input-text').value;
+            if (!text.trim()) throw new Error('Wprowadź tekst do anonimizacji');
+
+            response = await fetch('/api/anonymize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text, generateSynthetic: synthetic })
+            });
+        } else {
+            if (!selectedFile) throw new Error('Wybierz plik do anonimizacji');
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('generateSynthetic', synthetic);
+
+            response = await fetch('/api/anonymize/file', {
+                method: 'POST',
+                body: formData
+            });
+        }
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Błąd serwera');
         }
 
         const data = await response.json();
         
-        // Display result
-        // If synthetic is requested and available, show it. Otherwise show anonymized.
-        const resultText = (syntheticCheckbox.checked && data.synthetic) 
-            ? data.synthetic 
-            : data.anonymized;
-
-        output.textContent = resultText;
+        // Show result
+        const result = (synthetic && data.synthetic) ? data.synthetic : data.anonymized;
+        outputText.value = result;
         
-        // Update stats
-        if (data.entities) {
-            entityCount.textContent = data.entities.length;
-            stats.classList.remove('hidden');
-        }
+        // Update status
+        statusText.textContent = 'Zakończono pomyślnie';
+        statusText.className = 'text-green-400';
         
-        copyBtn.classList.remove('hidden');
+        const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+        processTime.textContent = `${duration}s`;
 
     } catch (error) {
-        console.error('Error:', error);
-        output.innerHTML = `<span class="text-red-400">Wystąpił błąd: ${error.message}</span>`;
+        console.error(error);
+        outputText.value = `Błąd: ${error.message}`;
+        statusText.textContent = 'Błąd';
+        statusText.className = 'text-red-400';
     } finally {
-        setLoading(false);
+        loadingOverlay.classList.add('hidden');
+        processBtn.disabled = false;
     }
-});
+}
 
-clearBtn.addEventListener('click', () => {
-    input.value = '';
-    output.textContent = '';
-    stats.classList.add('hidden');
-    copyBtn.classList.add('hidden');
-    input.focus();
-});
+function copyOutput() {
+    const outputText = document.getElementById('output-text');
+    outputText.select();
+    document.execCommand('copy');
+    
+    // Visual feedback could be added here
+}
 
-copyBtn.addEventListener('click', () => {
-    const textToCopy = output.textContent;
-    navigator.clipboard.writeText(textToCopy).then(() => {
-        const originalText = copyBtn.textContent;
-        copyBtn.textContent = 'Skopiowano!';
-        setTimeout(() => {
-            copyBtn.textContent = originalText;
-        }, 2000);
-    });
-});
-
-function setLoading(isLoading) {
-    if (isLoading) {
-        loader.classList.remove('hidden');
-        submitBtn.disabled = true;
-        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
-    } else {
-        loader.classList.add('hidden');
-        submitBtn.disabled = false;
-        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-    }
+function downloadOutput() {
+    const text = document.getElementById('output-text').value;
+    if (!text) return;
+    
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'anonymized_output.txt';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
 }
