@@ -16,3 +16,6 @@ venv/
 .vscode/
 
 .github/
+
+original_text.txt
+anonymized_text.txt
